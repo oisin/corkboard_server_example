@@ -1,0 +1,9 @@
+// Work in progress documentatioN
+
+This is not about making web pages, which is another valid way to use sinatra, it's just about getting the APIs together and using JSON. Of course this can be adapted to use XML easily enough, and I'll show how to do that.
+
+I'm assuming that your job is to make mobile applications, and that you would love to have a live server living locally to test your processing and interactions. This can help. And if you can get data examples from your client, then that's even better, as you can encode them in your local server and do some more relevant testing.
+
+Some knowledge of Ruby is required, but you are all programmers, so I'm assuming that you have it, or that you can pick enough up at the drop of a hat. I'll give you some links to fast references which can help. Ask questions if you spot anything odd in the code.
+
+The server framework we will use is called Sinatra. It's a Ruby web framework which you can use instead of Rails and others. It's Rack-based, which means that it builds on a middleware standard that is widely supported by Ruby hosters - meaning that it's relatively trivial to put your test server out on a free hosting environment to do lag testing and testing in the presence of real-world potential badnesses. It's also a DSL, or Domain Specific Language for a web server, meaning that the syntax used in programming it directly models the basic concepts of what a web server is designed to do - rather than being a general-purpose programming language (although you can do some of that too by writing plain old ruby). You'll see what I mean when we look at the code.

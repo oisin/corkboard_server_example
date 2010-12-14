@@ -1,0 +1,44 @@
+= Corkboard Server
+
+== Description
+
+Corkboard Server is a simple Sinatra app using Datamapper and SQLite that
+allows the saving, updating and retrieval of simple 'notes'. It's intended
+as an example for learning how to use Sinatra as a fast-to-make web app
+approach for iOS developers. Corkboard Server goes with Corkboard client to
+make a small, functional mobile application.
+
+== Features
+
+* Illustrates creation of an API with Sinatra
+* Shows how to create a data model using Datamapper and SQLite
+* Shows how to write tests for the web application
+
+== Requires
+
+Developed on Ruby 1.8.7. There are a number of gems you need to make it
+go.
+
+    gem install sinatra json data_mapper rack-test
+
+== Install
+
+There is no gem. Clone it and run the tests first.
+
+    git clone git@github.com:oisin/corkboard_server_example.git
+    cd corkboard_server_example
+    ruby tests/corkboard_tests.rb
+
+Then you can just run the server
+
+    cd ..
+    ruby corkboard.rb
+
+== Authors
+
+- Maintained by {Oisin Hurley}[mailto:oisin.hurley@gmail.com]
+
+== License
+
+Copyright (c) 2010 Oisin Hurley
+See ASL20.txt in this directory.
