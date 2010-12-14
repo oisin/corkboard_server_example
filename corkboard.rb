@@ -8,9 +8,9 @@ require 'dm-migrations'
 
 # TODO:
 # . logging
-# . datamapper and sqlite3
-# . model for notes
-# . accept only json media type
+# . media types testing
+# . test mode and development mode
+# . put the database somewhere else
 # . tests 
 
 DataMapper.setup(:default, "sqlite3://#{Dir.pwd}/corkboard.sqlite3")
@@ -23,6 +23,14 @@ class Note
   property :content, Text, :required => true
   property :created_at, DateTime
   property :updated_at, DateTime
+
+  def to_json(*a)
+   { 
+     'subject' => self.subject, 
+     'content' => self.content,
+     'date'    => self.updated_at
+   }.to_json(*a)
+  end
 end
 
 DataMapper.finalize
@@ -48,8 +56,13 @@ end
 # }
 #
 get '/note/:id' do
-  puts "**** get me note number #{params[:id]}"
-  status 501
+  note = Note.find(params[:id])
+  if note.nil? then
+    status 404
+  else
+    status 200
+    body(note.first.to_json)  # Notice the first here!
+  end
 end
 
 # Add a note to the server, subject and content
@@ -71,11 +84,12 @@ put '/note' do
     note = Note.create( 
                 :subject => data['subject'], 
                 :content => data['content'],
-                :created_at => Time.now
+                :created_at => Time.now,
+                :updated_at => Time.now
            )
     note.save
     status 200
-    body(note.id)
+    body(note.id.to_s)
   end
 end
 
