@@ -11,7 +11,9 @@ require 'dm-migrations'
 # . media types testing
 # . test mode and development mode
 # . put the database somewhere else
-# . tests 
+# . GET a range
+# . tests
+# . multi-user with authentication
 
 DataMapper.setup(:default, "sqlite3://#{Dir.pwd}/corkboard.sqlite3")
 
@@ -21,14 +23,14 @@ class Note
   property :id, Serial
   property :subject, Text, :required => true
   property :content, Text, :required => true
-  property :created_at, DateTime
-  property :updated_at, DateTime
+  property :created_at, Time
+  property :updated_at, Time
 
   def to_json(*a)
-   { 
-     'subject' => self.subject, 
+   {
+     'subject' => self.subject,
      'content' => self.content,
-     'date'    => self.updated_at
+     'date'    => self.updated_at.to_i
    }.to_json(*a)
   end
 end
@@ -43,8 +45,8 @@ Note.auto_upgrade!
 #    2 : "the other subject"
 # }
 #
-get '/notes' do
-  puts "**** give me all the notes there "
+get '/notes/:range' do
+  puts "**** give me all the notes in the range " +params[:range]
   501
 end
 
@@ -56,12 +58,13 @@ end
 # }
 #
 get '/note/:id' do
-  note = Note.find(params[:id])
+  puts "**** get note number #{params[:id]}"
+  note = Note.get(params[:id])
   if note.nil? then
     status 404
   else
     status 200
-    body(note.first.to_json)  # Notice the first here!
+    body(note.to_json) 
   end
 end
 
@@ -76,7 +79,6 @@ end
 # Returns 
 #  2
 put '/note' do
-  puts "**** adding a note "
   data = JSON.parse(request.body.string)
   if data.nil? or !data.has_key?('subject') or !data.has_key?('content') then
     status 400
@@ -89,6 +91,7 @@ put '/note' do
            )
     note.save
     status 200
+    puts "**** put a new note @" + note.id.to_s
     body(note.id.to_s)
   end
 end
@@ -103,12 +106,49 @@ end
 # Subject and content are optional!
 post '/note/:id' do
   puts "**** update note number #{params[:id]}"
-  status 501
+  data = JSON.parse(request.body.string)
+
+  if data.nil? then
+    status 400
+  else
+    puts ""
+    note = Note.get(params[:id])
+    if note.nil? then
+      status 404
+    else
+      updated = false
+      %w(subject content).each do |k|
+        if data.has_key?(k)
+          note[k] = data[k]
+          updated = true
+        end
+
+      end
+      if updated then
+        note['updated_at'] = Time.now
+        if !note.save then
+          status 500
+        else
+          
+        end
+      end
+    end
+  end
 end
 
 # Remove a note entirely
 # delete method hack might be required here!
 delete '/note/:id' do
   puts "**** delete note number #{params[:id]}"
-  status 501
+  note = Note.get(params[:id])
+  if note.nil? then
+    status 404
+  else
+    if note.destroy then
+      status 200
+    else
+      status 500
+    end
+  end
 end
+
