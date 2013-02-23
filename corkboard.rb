@@ -34,9 +34,10 @@ class Note
 
   def to_json(*a)
    {
-     'subject' => self.subject,
-     'content' => self.content,
-     'date'    => self.updated_at
+      'id'      => self.id,
+      'subject' => self.subject,
+      'content' => self.content,
+      'date'    => self.updated_at
    }.to_json(*a)
   end
 end
@@ -72,6 +73,7 @@ end
 # Returns
 #  2
 put '/note' do
+  # Request.body.read is destructive, make sure you don't use a puts here.
   data = JSON.parse(request.body.read)
 
   # Normally we would let the model validations handle this but we don't
@@ -88,7 +90,7 @@ put '/note' do
 
   # PUT requests must return a Location header for the new resource
   if note.save
-    return [200, {'Content-Type' => 'application/json', 'Location' => "/note/#{note.id}"}, [note.id.to_s]]
+    return [201, {'Content-Type' => 'application/json', 'Location' => "/note/#{note.id}"}, [note.to_json]]
   else
     return [406, {'Content-Type' => 'application/json'}, ['']]
   end
@@ -114,7 +116,6 @@ post '/note/:id' do
     return [404, {'Content-Type' => 'application/json'}, ['']]
   end
 
-  updated = false
   %w(subject content).each do |key|
     if !data[key].nil? && data[key] != note[key]
       note[key] = data[key]
@@ -123,7 +124,7 @@ post '/note/:id' do
   end
 
   if note.save then
-    return [200, {'Content-Type' => 'application/json'}, ['']]
+    return [200, {'Content-Type' => 'application/json'}, [note.to_json]]
   else
     return [406, {'Content-Type' => 'application/json'}, ['']]
   end
@@ -138,7 +139,7 @@ delete '/note/:id' do
   end
 
   if note.destroy then
-    return [200, {'Content-Type' => 'application/json'}, ['']]
+    return [204, {'Content-Type' => 'application/json'}, ['']]
   else
     return [500, {'Content-Type' => 'application/json'}, ['']]
   end

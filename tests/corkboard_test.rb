@@ -16,12 +16,12 @@ class ApplicationTest < Test::Unit::TestCase
 
   def make_a_note(note)
     put '/note', note.to_json
-    assert_equal 200, last_response.status
+    assert_equal 201, last_response.status
 
-    note_id = last_response.body
-    assert_not_nil note_id
-    assert_match /\d+/, note_id
-    note_id
+    note = JSON.parse(last_response.body)
+    assert_not_nil note['id']
+    assert_equal Fixnum, note['id'].class
+    return note['id'].to_s
   end
 
   def retrieve_note(note_id)
@@ -63,7 +63,7 @@ class ApplicationTest < Test::Unit::TestCase
     # Make a new note and then delete it
     note_id = make_a_note(note)
     delete '/note/' + note_id
-    assert_equal 200, last_response.status
+    assert_equal 204, last_response.status
 
     # Make sure that the note is gone!
     get '/note/' + note_id
