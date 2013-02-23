@@ -1,6 +1,5 @@
 require 'rubygems'
 require 'sinatra'
-require 'json'
 require 'dm-core'
 require 'dm-validations'
 require 'dm-timestamps'
@@ -75,6 +74,8 @@ end
 put '/note' do
   data = JSON.parse(request.body.read)
 
+  # Normally we would let the model validations handle this but we don't
+  # have validations yet so we have to check now and after we save.
   if data.nil? || data['subject'].nil? || data['content'].nil?
     return [406, {'Content-Type' => 'application/json'}, ['']]
   end
@@ -85,6 +86,7 @@ put '/note' do
               :created_at => Time.now,
               :updated_at => Time.now)
 
+  # PUT requests must return a Location header for the new resource
   if note.save
     return [200, {'Content-Type' => 'application/json', 'Location' => "/note/#{note.id}"}, [note.id.to_s]]
   else
@@ -101,6 +103,7 @@ end
 # }
 # Subject and content are optional!
 post '/note/:id' do
+  # Request.body.read is destructive, make sure you don't use a puts here.
   data = JSON.parse(request.body.read)
   if data.nil?
     return [406, {'Content-Type' => 'application/json'}, ['']]
