@@ -1,11 +1,12 @@
 require 'rubygems'
 require 'sinatra'
+require 'json'
 require 'dm-core'
 require 'dm-validations'
 require 'dm-timestamps'
 require 'dm-migrations'
 
-if development?
+if development? # This is set by default, override with `RACK_ENV=production rackup`
   require 'sinatra/reloader'
   require 'debugger'
   Debugger.settings[:autoeval] = true
@@ -21,7 +22,14 @@ end
 # . GET a range
 # . multi-user with authentication
 
-DataMapper.setup(:default, "sqlite3://#{File.dirname(__FILE__)}/corkboard.sqlite3")
+configure :development, :production do
+  set :datamapper_url, "sqlite3://#{File.dirname(__FILE__)}/corkboard.sqlite3"
+end
+configure :test do
+  set :datamapper_url, "sqlite3://#{File.dirname(__FILE__)}/corkboard-test.sqlite3"
+end
+
+DataMapper.setup(:default, settings.datamapper_url)
 
 class Note
   include DataMapper::Resource

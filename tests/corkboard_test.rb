@@ -1,13 +1,15 @@
+ENV['RACK_ENV'] = 'test'
+
 require 'rubygems'
 require 'sinatra'
-require './corkboard'
 require 'test/unit'
 require 'rack/test'
 require 'base64'
 require 'json'
 require 'timecop'
+require './corkboard'
 
-class ApplicationTest < Test::Unit::TestCase
+class ApplicationTest < MiniTest::Unit::TestCase
   include Rack::Test::Methods
 
   def app
@@ -19,7 +21,7 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal 201, last_response.status
 
     note = JSON.parse(last_response.body)
-    assert_not_nil note['id']
+    refute_nil note['id']
     assert_equal Fixnum, note['id'].class
     return note['id'].to_s
   end
@@ -29,7 +31,7 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
 
     returned_note = JSON.parse(last_response.body)
-    assert_not_nil returned_note
+    refute_nil returned_note
     returned_note
   end
 
@@ -49,7 +51,7 @@ class ApplicationTest < Test::Unit::TestCase
 
     # Check we got the same note back!
     note.each_key do |k|
-      assert_not_nil returned_note[k]
+      refute_nil returned_note[k]
       assert_equal note[k], returned_note[k]
     end
   end
