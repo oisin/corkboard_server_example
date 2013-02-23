@@ -5,6 +5,7 @@ require 'test/unit'
 require 'rack/test'
 require 'base64'
 require 'json'
+require 'timecop'
 
 class ApplicationTest < Test::Unit::TestCase
   include Rack::Test::Methods
@@ -77,55 +78,54 @@ class ApplicationTest < Test::Unit::TestCase
 
     note_id = make_a_note(note)
 
-    # Update the subject of the note
-    note_update_subject = {
-        "subject" => "Remember!"
-    }
+    Timecop.freeze(Date.today + 30) do
+      # Update the subject of the note
+      note_update_subject = {
+          "subject" => "Remember!"
+      }
 
-    test_time = DateTime.now
-    sleep 1
+      test_time = DateTime.now
 
-    post '/note/' + note_id, note_update_subject.to_json
-    assert_equal 200, last_response.status
+      post '/note/' + note_id, note_update_subject.to_json
+      assert_equal 200, last_response.status
 
-    returned_note = retrieve_note(note_id)
+      returned_note = retrieve_note(note_id)
 
-    assert_equal returned_note['content'], note['content']
-    assert_equal returned_note['subject'], note_update_subject['subject']
+      assert_equal returned_note['content'], note['content']
+      assert_equal returned_note['subject'], note_update_subject['subject']
 
-    assert returned_note['date'] >= test_time.inspect, "Note time not updated"
+      assert returned_note['date'] >= test_time.inspect, "Note time not updated"
 
-    # Update the content of the note
-    note_update_content = {
-        "content" => "Test add and update note content!"
-    }
+      # Update the content of the note
+      note_update_content = {
+          "content" => "Test add and update note content!"
+      }
 
-    test_time = DateTime.now
-    sleep 1
+      test_time = DateTime.now
 
-    post '/note/' + note_id, note_update_content.to_json
-    assert_equal 200, last_response.status
+      post '/note/' + note_id, note_update_content.to_json
+      assert_equal 200, last_response.status
 
-    returned_note = retrieve_note(note_id)
+      returned_note = retrieve_note(note_id)
 
-    assert_equal returned_note['content'], note_update_content['content']
-    assert_equal returned_note['subject'], note_update_subject['subject']
+      assert_equal returned_note['content'], note_update_content['content']
+      assert_equal returned_note['subject'], note_update_subject['subject']
 
-    assert returned_note['date'] >= test_time.inspect, "Note time not updated"
+      assert returned_note['date'] >= test_time.inspect, "Note time not updated"
 
-    # Update both subject and content of the note
-    test_time = DateTime.now
-    sleep 1
+      # Update both subject and content of the note
+      test_time = DateTime.now
 
-    post '/note/' + note_id, note.to_json
-    assert_equal 200, last_response.status
+      post '/note/' + note_id, note.to_json
+      assert_equal 200, last_response.status
 
-    returned_note = retrieve_note(note_id)
+      returned_note = retrieve_note(note_id)
 
-    assert_equal returned_note['content'], note['content']
-    assert_equal returned_note['subject'], note['subject']
+      assert_equal returned_note['content'], note['content']
+      assert_equal returned_note['subject'], note['subject']
 
-    assert returned_note['date'] >= test_time.inspect, "Note time not updated"
+      assert returned_note['date'] >= test_time.inspect, "Note time not updated"
+    end
   end
 
   # def test_get_notes_range

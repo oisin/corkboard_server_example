@@ -20,19 +20,18 @@ end
 # . test mode and development mode
 # . put the database somewhere else
 # . GET a range
-# . tests
 # . multi-user with authentication
 
-DataMapper.setup(:default, "sqlite3://#{Dir.pwd}/corkboard.sqlite3")
+DataMapper.setup(:default, "sqlite3://#{File.dirname(__FILE__)}/corkboard.sqlite3")
 
 class Note
   include DataMapper::Resource
 
-  property :id, Serial
-  property :subject, Text, :required => true
-  property :content, Text, :required => true
-  property :created_at, DateTime
-  property :updated_at, DateTime
+  Note.property(:id, Serial)
+  Note.property(:subject, Text, :required => true)
+  Note.property(:content, Text, :required => true)
+  Note.property(:created_at, DateTime)
+  Note.property(:updated_at, DateTime)
 
   def to_json(*a)
    {
@@ -56,10 +55,11 @@ Note.auto_upgrade!
 get '/note/:id' do
   note = Note.get(params[:id])
 
-  status 404 and return if note.nil?
+  if note.nil?
+    return [404, {'Content-Type' => 'application/json'}, ['']]
+  end
 
-  status 200
-  body(note.to_json)
+  return [200, {'Content-Type' => 'application/json'}, [note.to_json]]
 end
 
 # Add a note to the server, subject and content
@@ -75,7 +75,9 @@ end
 put '/note' do
   data = JSON.parse(request.body.read)
 
-  status 406 and return if data.nil? || data['subject'].nil? || data['content'].nil?
+  if data.nil? || data['subject'].nil? || data['content'].nil?
+    return [406, {'Content-Type' => 'application/json'}, ['']]
+  end
 
   note = Note.create(
               :subject => data['subject'],
@@ -84,10 +86,9 @@ put '/note' do
               :updated_at => Time.now)
 
   if note.save
-    status 200
-    body note.id.to_s
+    return [200, {'Content-Type' => 'application/json', 'Location' => "/note/#{note.id}"}, [note.id.to_s]]
   else
-    status 406
+    return [406, {'Content-Type' => 'application/json'}, ['']]
   end
 end
 
@@ -101,10 +102,14 @@ end
 # Subject and content are optional!
 post '/note/:id' do
   data = JSON.parse(request.body.read)
-  status 406 and return if data.nil?
+  if data.nil?
+    return [406, {'Content-Type' => 'application/json'}, ['']]
+  end
 
   note = Note.get(params[:id])
-  status 404 and return if note.nil?
+  if note.nil?
+    return [404, {'Content-Type' => 'application/json'}, ['']]
+  end
 
   updated = false
   %w(subject content).each do |key|
@@ -115,9 +120,9 @@ post '/note/:id' do
   end
 
   if note.save then
-    status 200
+    return [200, {'Content-Type' => 'application/json'}, ['']]
   else
-    status 406
+    return [406, {'Content-Type' => 'application/json'}, ['']]
   end
 end
 
@@ -125,12 +130,14 @@ end
 # delete method hack might be required here!
 delete '/note/:id' do
   note = Note.get(params[:id])
-  status 404 and return if note.nil?
+  if note.nil?
+    return [404, {'Content-Type' => 'application/json'}, ['']]
+  end
 
   if note.destroy then
-    status 200
+    return [200, {'Content-Type' => 'application/json'}, ['']]
   else
-    status 500
+    return [500, {'Content-Type' => 'application/json'}, ['']]
   end
 end
 
