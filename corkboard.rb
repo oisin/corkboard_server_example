@@ -6,8 +6,13 @@ require 'dm-validations'
 require 'dm-timestamps'
 require 'dm-migrations'
 
-require 'sinatra/reloader' if development?
-require 'debugger' if development?
+if development?
+  require 'sinatra/reloader'
+  require 'debugger'
+  Debugger.settings[:autoeval] = true
+  Debugger.settings[:autolist] = 1
+  Debugger.settings[:reload_source_on_change] = true
+end
 
 # TODO:
 # . logging
@@ -120,7 +125,6 @@ end
 # delete method hack might be required here!
 delete '/note/:id' do
   note = Note.get(params[:id])
-
   status 404 and return if note.nil?
 
   if note.destroy then
