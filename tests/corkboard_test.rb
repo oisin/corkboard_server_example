@@ -1,6 +1,6 @@
 require 'rubygems'
 require 'sinatra'
-require '../corkboard'
+require './corkboard'
 require 'test/unit'
 require 'rack/test'
 require 'base64'
@@ -36,9 +36,9 @@ class ApplicationTest < Test::Unit::TestCase
     # Create a new note, then retrieve it and
     # assert that we get the same stuff back!
 
-    note = { 
-        "subject" => "Don't forget", 
-        "content" => "Test add and retrieve note!" 
+    note = {
+        "subject" => "Don't forget",
+        "content" => "Test add and retrieve note!"
     }
 
     note_id = make_a_note(note)
@@ -82,7 +82,7 @@ class ApplicationTest < Test::Unit::TestCase
         "subject" => "Remember!"
     }
 
-    test_time = Time.now
+    test_time = DateTime.now
     sleep 1
 
     post '/note/' + note_id, note_update_subject.to_json
@@ -93,14 +93,14 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal returned_note['content'], note['content']
     assert_equal returned_note['subject'], note_update_subject['subject']
 
-    assert returned_note['date'].to_i >= test_time.to_i, "Note time not updated"
+    assert returned_note['date'] >= test_time.inspect, "Note time not updated"
 
     # Update the content of the note
     note_update_content = {
         "content" => "Test add and update note content!"
     }
 
-    test_time = Time.now
+    test_time = DateTime.now
     sleep 1
 
     post '/note/' + note_id, note_update_content.to_json
@@ -111,12 +111,12 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal returned_note['content'], note_update_content['content']
     assert_equal returned_note['subject'], note_update_subject['subject']
 
-    assert returned_note['date'].to_i >= test_time.to_i, "Note time not updated"
+    assert returned_note['date'] >= test_time.inspect, "Note time not updated"
 
     # Update both subject and content of the note
-    test_time = Time.now
+    test_time = DateTime.now
     sleep 1
-    
+
     post '/note/' + note_id, note.to_json
     assert_equal 200, last_response.status
 
@@ -125,16 +125,16 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal returned_note['content'], note['content']
     assert_equal returned_note['subject'], note['subject']
 
-    assert returned_note['date'].to_i >= test_time.to_i, "Note time not updated"
+    assert returned_note['date'] >= test_time.inspect, "Note time not updated"
   end
 
-  def test_get_notes_range
-    puts "****TODO: test_get_notes_range "
-  end
+  # def test_get_notes_range
+  #   puts "****TODO: test_get_notes_range "
+  # end
 
-  def test_reject_bad_media_type
-    puts "****TODO: test_reject_bad_media_type"
-  end
+  # def test_reject_bad_media_type
+  #   puts "****TODO: test_reject_bad_media_type"
+  # end
 
   def test_get_non_existent_note
     get '/note/BLOOTYWOOTY'  # always an integer id...
