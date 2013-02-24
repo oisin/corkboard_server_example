@@ -17,7 +17,6 @@ end
 # TODO:
 # . logging
 # . media types testing
-# . test mode and development mode
 # . put the database somewhere else
 # . GET a range
 # . multi-user with authentication
@@ -53,6 +52,14 @@ end
 DataMapper.finalize
 Note.auto_upgrade!
 
+def jsonp?(json)
+  if params[:callback]
+    return("#{params[:callback]}(#{json})")
+  else
+    return(json)
+  end
+end
+
 # Download one note, subject and content
 # Returns:
 # {
@@ -67,7 +74,7 @@ get '/note/:id' do
     return [404, {'Content-Type' => 'application/json'}, ['']]
   end
 
-  return [200, {'Content-Type' => 'application/json'}, [note.to_json]]
+  return [200, {'Content-Type' => 'application/json'}, [jsonp?(note.to_json)]]
 end
 
 # Add a note to the server, subject and content
