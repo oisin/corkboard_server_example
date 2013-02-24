@@ -28,6 +28,10 @@ configure :test do
   set :datamapper_url, "sqlite3://#{File.dirname(__FILE__)}/corkboard-test.sqlite3"
 end
 
+before do
+  content_type 'application/json'
+end
+
 DataMapper.setup(:default, settings.datamapper_url)
 
 class Note
@@ -52,12 +56,8 @@ end
 DataMapper.finalize
 Note.auto_upgrade!
 
-def jsonp?(json)
-  if params[:callback]
-    return("#{params[:callback]}(#{json})")
-  else
-    return(json)
-  end
+def jsonp(json)
+  params[:callback] ? "#{params[:callback]}(#{json})" : json
 end
 
 # Download one note, subject and content
@@ -69,12 +69,8 @@ end
 #
 get '/note/:id' do
   note = Note.get(params[:id])
-
-  if note.nil?
-    return [404, {'Content-Type' => 'application/json'}, ['']]
-  end
-
-  return [200, {'Content-Type' => 'application/json'}, [jsonp?(note.to_json)]]
+  halt 404 if note.nil?
+  jsonp(note.to_json)
 end
 
 # Add a note to the server, subject and content
@@ -87,6 +83,7 @@ end
 #
 # Returns
 #  2
+#
 put '/note' do
   # Request.body.read is destructive, make sure you don't use a puts here.
   data = JSON.parse(request.body.read)
@@ -94,21 +91,19 @@ put '/note' do
   # Normally we would let the model validations handle this but we don't
   # have validations yet so we have to check now and after we save.
   if data.nil? || data['subject'].nil? || data['content'].nil?
-    return [406, {'Content-Type' => 'application/json'}, ['']]
+    halt 400
   end
 
   note = Note.create(
               :subject => data['subject'],
               :content => data['content'],
-              :created_at => Time.now,
-              :updated_at => Time.now)
+              :created_at => Time.now.utc,
+              :updated_at => Time.now.utc)
+
+  halt 500 unless note.save
 
   # PUT requests must return a Location header for the new resource
-  if note.save
-    return [201, {'Content-Type' => 'application/json', 'Location' => "/note/#{note.id}"}, [jsonp?(note.to_json)]]
-  else
-    return [406, {'Content-Type' => 'application/json'}, ['']]
-  end
+  [201, {'Location' => "/note/#{note.id}"}, jsonp(note.to_json)]
 end
 
 # Update the content of a note, replace subject
@@ -119,44 +114,33 @@ end
 #    content : "wibble wibble wibble wibble""
 # }
 # Subject and content are optional!
+#
 post '/note/:id' do
   # Request.body.read is destructive, make sure you don't use a puts here.
   data = JSON.parse(request.body.read)
-  if data.nil?
-    return [406, {'Content-Type' => 'application/json'}, ['']]
-  end
-
+  halt 400 if data.nil?
+  
   note = Note.get(params[:id])
-  if note.nil?
-    return [404, {'Content-Type' => 'application/json'}, ['']]
-  end
+  halt 404 if note.nil?
 
   %w(subject content).each do |key|
     if !data[key].nil? && data[key] != note[key]
       note[key] = data[key]
-      note['updated_at'] = Time.now
+      note['updated_at'] = Time.now.utc
     end
   end
 
-  if note.save then
-    return [200, {'Content-Type' => 'application/json'}, [jsonp?(note.to_json)]]
-  else
-    return [406, {'Content-Type' => 'application/json'}, ['']]
-  end
+  halt 500 unless note.save
+  jsonp(note.to_json)
 end
 
 # Remove a note entirely
-# delete method hack might be required here!
+#
 delete '/note/:id' do
   note = Note.get(params[:id])
-  if note.nil?
-    return [404, {'Content-Type' => 'application/json'}, ['']]
-  end
-
-  if note.destroy then
-    return [204, {'Content-Type' => 'application/json'}, ['']]
-  else
-    return [500, {'Content-Type' => 'application/json'}, ['']]
-  end
+  halt 404 if note.nil?
+  
+  halt 500 unless note.destroy
+  204
 end
 
