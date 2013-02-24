@@ -105,7 +105,7 @@ put '/note' do
 
   # PUT requests must return a Location header for the new resource
   if note.save
-    return [201, {'Content-Type' => 'application/json', 'Location' => "/note/#{note.id}"}, [note.to_json]]
+    return [201, {'Content-Type' => 'application/json', 'Location' => "/note/#{note.id}"}, [jsonp?(note.to_json)]]
   else
     return [406, {'Content-Type' => 'application/json'}, ['']]
   end
@@ -139,7 +139,7 @@ post '/note/:id' do
   end
 
   if note.save then
-    return [200, {'Content-Type' => 'application/json'}, [note.to_json]]
+    return [200, {'Content-Type' => 'application/json'}, [jsonp?(note.to_json)]]
   else
     return [406, {'Content-Type' => 'application/json'}, ['']]
   end
