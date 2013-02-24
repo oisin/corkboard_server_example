@@ -1,5 +1,11 @@
 ENV['RACK_ENV'] = 'test'
 
+
+# SimpleCov must be loaded before the Sinatra DSL
+# and the application code.
+require 'simplecov'
+SimpleCov.start
+
 require 'rubygems'
 require 'sinatra'
 require 'test/unit'
@@ -23,7 +29,9 @@ class ApplicationTest < MiniTest::Unit::TestCase
     note = JSON.parse(last_response.body)
     refute_nil note['id']
     assert_equal Fixnum, note['id'].class
-    return note['id'].to_s
+    assert_equal "/note/#{note['id']}", last_response.headers['Location']
+
+    note['id'].to_s
   end
 
   def retrieve_note(note_id)
@@ -32,9 +40,20 @@ class ApplicationTest < MiniTest::Unit::TestCase
 
     returned_note = JSON.parse(last_response.body)
     refute_nil returned_note
+    
     returned_note
   end
-
+  
+  def test_add_bum_note_no_content
+    put '/note', {"subject" => "Don't forget"}.to_json
+    assert_equal 400, last_response.status
+  end
+  
+  def test_add_bum_note_no_subject
+    put '/note', {"content" => "To do something"}.to_json
+    assert_equal 400, last_response.status
+  end
+  
   def test_add_and_retrieve_note
     # Create a new note, then retrieve it and
     # assert that we get the same stuff back!
@@ -129,14 +148,6 @@ class ApplicationTest < MiniTest::Unit::TestCase
       assert returned_note['date'] >= test_time.inspect, "Note time not updated"
     end
   end
-
-  # def test_get_notes_range
-  #   puts "****TODO: test_get_notes_range "
-  # end
-
-  # def test_reject_bad_media_type
-  #   puts "****TODO: test_reject_bad_media_type"
-  # end
 
   def test_get_non_existent_note
     get '/note/BLOOTYWOOTY'  # always an integer id...

@@ -13,4 +13,5 @@ gem 'dm-migrations'
 group :development, :test do
   gem 'debugger'
   gem 'timecop'
+  gem 'simplecov'
 end
