@@ -6,31 +6,45 @@ require 'dm-validations'
 require 'dm-timestamps'
 require 'dm-migrations'
 
+if development? # This is set by default, override with `RACK_ENV=production rackup`
+  require 'sinatra/reloader'
+  require 'debugger'
+  Debugger.settings[:autoeval] = true
+  Debugger.settings[:autolist] = 1
+  Debugger.settings[:reload_source_on_change] = true
+end
+
 # TODO:
 # . logging
 # . media types testing
-# . test mode and development mode
 # . put the database somewhere else
 # . GET a range
-# . tests
 # . multi-user with authentication
 
-DataMapper.setup(:default, "sqlite3://#{Dir.pwd}/corkboard.sqlite3")
+configure :development, :production do
+  set :datamapper_url, "sqlite3://#{File.dirname(__FILE__)}/corkboard.sqlite3"
+end
+configure :test do
+  set :datamapper_url, "sqlite3://#{File.dirname(__FILE__)}/corkboard-test.sqlite3"
+end
 
-class Note 
+DataMapper.setup(:default, settings.datamapper_url)
+
+class Note
   include DataMapper::Resource
 
-  property :id, Serial
-  property :subject, Text, :required => true
-  property :content, Text, :required => true
-  property :created_at, Time
-  property :updated_at, Time
+  Note.property(:id, Serial)
+  Note.property(:subject, Text, :required => true)
+  Note.property(:content, Text, :required => true)
+  Note.property(:created_at, DateTime)
+  Note.property(:updated_at, DateTime)
 
   def to_json(*a)
    {
-     'subject' => self.subject,
-     'content' => self.content,
-     'date'    => self.updated_at.to_i
+      'id'      => self.id,
+      'subject' => self.subject,
+      'content' => self.content,
+      'date'    => self.updated_at
    }.to_json(*a)
   end
 end
@@ -38,117 +52,111 @@ end
 DataMapper.finalize
 Note.auto_upgrade!
 
-# Download subjects and ids of my notes
-# Returns:
-# { 
-#    1 : "the subject",
-#    2 : "the other subject"
-# }
-#
-get '/notes/:range' do
-  puts "**** give me all the notes in the range " +params[:range]
-  501
+def jsonp?(json)
+  if params[:callback]
+    return("#{params[:callback]}(#{json})")
+  else
+    return(json)
+  end
 end
 
 # Download one note, subject and content
 # Returns:
-# { 
+# {
 #    subject : "the subject",
 #    content : "wibble wibble wibble wibble""
 # }
 #
 get '/note/:id' do
-  puts "**** get note number #{params[:id]}"
   note = Note.get(params[:id])
-  if note.nil? then
-    status 404
-  else
-    status 200
-    body(note.to_json) 
+
+  if note.nil?
+    return [404, {'Content-Type' => 'application/json'}, ['']]
   end
+
+  return [200, {'Content-Type' => 'application/json'}, [jsonp?(note.to_json)]]
 end
 
 # Add a note to the server, subject and content
 # will give you back an id
 # Body
-# { 
+# {
 #    subject : "the subject",
 #    content : "wibble wibble wibble wibble""
 # }
 #
-# Returns 
+# Returns
 #  2
 put '/note' do
-  data = JSON.parse(request.body.string)
-  if data.nil? or !data.has_key?('subject') or !data.has_key?('content') then
-    status 400
+  # Request.body.read is destructive, make sure you don't use a puts here.
+  data = JSON.parse(request.body.read)
+
+  # Normally we would let the model validations handle this but we don't
+  # have validations yet so we have to check now and after we save.
+  if data.nil? || data['subject'].nil? || data['content'].nil?
+    return [406, {'Content-Type' => 'application/json'}, ['']]
+  end
+
+  note = Note.create(
+              :subject => data['subject'],
+              :content => data['content'],
+              :created_at => Time.now,
+              :updated_at => Time.now)
+
+  # PUT requests must return a Location header for the new resource
+  if note.save
+    return [201, {'Content-Type' => 'application/json', 'Location' => "/note/#{note.id}"}, [jsonp?(note.to_json)]]
   else
-    note = Note.create( 
-                :subject => data['subject'], 
-                :content => data['content'],
-                :created_at => Time.now,
-                :updated_at => Time.now
-           )
-    note.save
-    status 200
-    puts "**** put a new note @" + note.id.to_s
-    body(note.id.to_s)
+    return [406, {'Content-Type' => 'application/json'}, ['']]
   end
 end
 
 # Update the content of a note, replace subject
 # or content
 # Body
-# { 
+# {
 #    subject : "the subject",
 #    content : "wibble wibble wibble wibble""
 # }
 # Subject and content are optional!
 post '/note/:id' do
-  puts "**** update note number #{params[:id]}"
-  data = JSON.parse(request.body.string)
+  # Request.body.read is destructive, make sure you don't use a puts here.
+  data = JSON.parse(request.body.read)
+  if data.nil?
+    return [406, {'Content-Type' => 'application/json'}, ['']]
+  end
 
-  if data.nil? then
-    status 400
-  else
-    puts ""
-    note = Note.get(params[:id])
-    if note.nil? then
-      status 404
-    else
-      updated = false
-      %w(subject content).each do |k|
-        if data.has_key?(k)
-          note[k] = data[k]
-          updated = true
-        end
+  note = Note.get(params[:id])
+  if note.nil?
+    return [404, {'Content-Type' => 'application/json'}, ['']]
+  end
 
-      end
-      if updated then
-        note['updated_at'] = Time.now
-        if !note.save then
-          status 500
-        else
-          
-        end
-      end
+  %w(subject content).each do |key|
+    if !data[key].nil? && data[key] != note[key]
+      note[key] = data[key]
+      note['updated_at'] = Time.now
     end
+  end
+
+  if note.save then
+    return [200, {'Content-Type' => 'application/json'}, [jsonp?(note.to_json)]]
+  else
+    return [406, {'Content-Type' => 'application/json'}, ['']]
   end
 end
 
 # Remove a note entirely
 # delete method hack might be required here!
 delete '/note/:id' do
-  puts "**** delete note number #{params[:id]}"
   note = Note.get(params[:id])
-  if note.nil? then
-    status 404
+  if note.nil?
+    return [404, {'Content-Type' => 'application/json'}, ['']]
+  end
+
+  if note.destroy then
+    return [204, {'Content-Type' => 'application/json'}, ['']]
   else
-    if note.destroy then
-      status 200
-    else
-      status 500
-    end
+    return [500, {'Content-Type' => 'application/json'}, ['']]
   end
 end
 
