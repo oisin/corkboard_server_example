@@ -99,8 +99,8 @@ If you get a 204 back, the note is gone. If you get a 404 back, then that note h
 
 ### Authors
 
-- Maintained by {Oisin Hurley}[mailto:oisin.hurley@gmail.com]
-- Updated for Portland Code School by {Chuck Lauer Vose}[cvose@portlandcodeschool.com]
+- Maintained by [Ois&iacute;n Hurley](oisin.hurley@gmail.com)
+- Updated for Portland Code School by [Chuck Lauer Vose](cvose@portlandcodeschool.com)
 
 ### License
 
