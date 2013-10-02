@@ -107,3 +107,7 @@ If you get a 204 back, the note is gone. If you get a 404 back, then that note h
 Copyright (c) 2010 Oisin Hurley
    
 See ASL20.txt in this directory.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/oisin/corkboard_server_example/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
