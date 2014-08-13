@@ -14,7 +14,7 @@ make a small, functional mobile application.
 
 ### Install
 
-You'll need Ruby 1.9.3 to run, and Bundler to install the necessary gems. 
+You'll need Ruby 2.1.2 to run, and Bundler to install the necessary gems. 
 
     $ git clone https://github.com/oisin/corkboard_server_example.git
     $ bundle
@@ -104,7 +104,7 @@ If you get a 204 back, the note is gone. If you get a 404 back, then that note h
 
 ### License
 
-Copyright (c) 2010 Oisin Hurley
+Copyright (c) 2010-2014 Oisin Hurley
    
 See ASL20.txt in this directory.
 
