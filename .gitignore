@@ -1,3 +1,6 @@
 *.swp
 *.sqlite3
 .idea/
+Gemfile.lock
+coverage
+.ruby-version

@@ -8,14 +8,14 @@ SimpleCov.start
 
 require 'rubygems'
 require 'sinatra'
-require 'test/unit'
+require 'minitest/autorun'
 require 'rack/test'
 require 'base64'
 require 'json'
 require 'timecop'
 require './corkboard'
 
-class ApplicationTest < MiniTest::Unit::TestCase
+class ApplicationTest < MiniTest::Test
   include Rack::Test::Methods
 
   def app
@@ -40,20 +40,20 @@ class ApplicationTest < MiniTest::Unit::TestCase
 
     returned_note = JSON.parse(last_response.body)
     refute_nil returned_note
-    
+
     returned_note
   end
-  
+
   def test_add_bum_note_no_content
     put '/note', {"subject" => "Don't forget"}.to_json
     assert_equal 400, last_response.status
   end
-  
+
   def test_add_bum_note_no_subject
     put '/note', {"content" => "To do something"}.to_json
     assert_equal 400, last_response.status
   end
-  
+
   def test_add_and_retrieve_note
     # Create a new note, then retrieve it and
     # assert that we get the same stuff back!
